@@ -37,6 +37,9 @@ for mod in target_core_mod tcm_loop target_core_file; do
         echo "Module $mod is not running"
         echo "executing modprobe -b $mod"
         modprobe -b $mod
+        # Enable module at boot
+        mkdir -p /etc/modules-load.d
+        echo $mod >> /etc/modules-load.d/lio.conf 
     fi
 done
 
