@@ -41,14 +41,16 @@ loop_dir="$target_dir"/loopback
 # Enable a mod if not present
 # /sys/module/$modname/initstate has got the word "live"
 # in case the kernel module is loaded and running 
-for mod in target_core_mod tcm_loop target_core_file; do
+for mod in target_core_mod tcm_loop target_core_file uio target_core_user; do
     state_file=/sys/module/$mod/initstate
     if [ -f "$state_file" ] && grep -q live "$state_file"; then
         echo "Module $mod is running"
     else 
         echo "Module $mod is not running"
-        echo "executing modprobe -b $mod"
-        modprobe -b $mod
+        echo "--> executing \"modprobe -b $mod\""
+        if ! modprobe -b $mod; then
+            exit 1
+        fi
         # Enable module at boot
         mkdir -p /etc/modules-load.d
         [ ! -f /etc/modules-load.d/lio.conf ] && echo $mod >> /etc/modules-load.d/lio.conf # create file if doesn't exist
