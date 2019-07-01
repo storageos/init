@@ -49,7 +49,12 @@ for mod in target_core_mod tcm_loop target_core_file uio target_core_user; do
         echo "Module $mod is not running"
         echo "--> executing \"modprobe -b $mod\""
         if ! modprobe -b $mod; then
-            exit 1
+            # core_user and uio are not mandatory
+            if [ "$mod" != "target_core_user" ] && [ "$mod" != "uio" ]; then
+                exit 1
+            else 
+                echo "Couldn't enable $mod"
+            fi
         fi
         # Enable module at boot
         mkdir -p /etc/modules-load.d
