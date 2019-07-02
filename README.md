@@ -17,3 +17,15 @@ docker run --name enable_lio                  \
            -v /sys:/sys:rshared               \
            storageos/init:0.1
 ```
+
+# Kernel modules enabled
+
+The kernel modules enabled are the following.
+- configfs
+- tcm_loop
+- target_core_mod
+- target_core_file
+- uio
+- target_core_user
+
+> Even though the modules uio and target_core_user are optional, they are highly recommended.
