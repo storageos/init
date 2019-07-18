@@ -1,6 +1,6 @@
 # Init Container for StorageOS
 
-Init container to prepare the environment for StorageOS
+Init container to prepare the environment for StorageOS.
 
 
 ## Build
