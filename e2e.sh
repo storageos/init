@@ -58,6 +58,10 @@ main() {
     until kubectl get pod test-pod --no-headers -o go-template='{{.status.phase}}' | grep -q Running; do sleep 5; done
     echo "test-pod found running"
 
+    echo "init container logs"
+    kubectl logs test-pod -c storageos-init
+    echo
+
     echo "Checking init container exit code"
     exitCode=$(kubectl get pod test-pod --no-headers -o go-template='{{(index .status.initContainerStatuses 0).state.terminated.exitCode}}')
     if [ "$exitCode" == "0" ]; then
