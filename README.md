@@ -1,31 +1,54 @@
 # Init Container for StorageOS
 
-StorageOS requires Linux-IO (LIO) target. This init container will ensure that the kernel modules 
-and configuration to use LIO are available in the kernel's host where StorageOS containers run.
+[![Build Status](https://travis-ci.org/storageos/init.svg?branch=master)](https://travis-ci.org/storageos/init)
+
+Init container to prepare the environment for StorageOS.
 
 
-If you experience any issue running the container, checkout the [os compatibility](https://docs.storageos.com/docs/reference/os_support) page.
-
-## Docker
+## Build
 
 ```
-docker run --name enable_lio                  \
-           --privileged                       \
-           --rm                               \
-           --cap-add=SYS_ADMIN                \
-           -v /lib/modules:/lib/modules       \
-           -v /sys:/sys:rshared               \
-           storageos/init:0.1
+$ make image IMAGE=storageos/init:test
 ```
 
-# Kernel modules enabled
 
-The kernel modules enabled are the following.
-- configfs
-- tcm_loop
-- target_core_mod
-- target_core_file
-- uio
-- target_core_user
+## Run it on host
 
-> Even though the modules uio and target_core_user are optional, they are highly recommended.
+Build the init container with `make image` and run it on the host with
+`make run`.
+
+
+## Script Framework
+
+The script framework executes a set of scripts, performing any checks and
+running the necessary script based on the host environment. The script's stdout
+and stderr are written to the stdout and stderr of the init app. Container logs
+should show all the logs of the individual scripts that ran. The exit status of
+the scripts are used to determine initialization failure or success. Any
+non-zero exit status are also logged as an event in the k8s pod events.
+
+The scripts should be placed in the `scripts/` dir. The scripts are sorted for
+execution based on their name and their parent directory name in lexical order.
+The scripts must start with shebang (`#!/bin/bash` for bash scripts) and must
+have executable permission(`chmod +x`).
+
+Example scripts dir:
+```
+scripts
+├── 01-script.sh
+├── 05-foo
+│   └── scriptx.sh
+│   └── README.md
+├── 07-scriptz.sh
+└── 10-baz
+    └── scripty.sh
+    └── README.md
+```
+
+In the above example, the script execution order will be
+```
+01-script.sh, scriptx.sh, 07-scriptz.sh, scripty.sh
+```
+
+For documenting each script, they can be placed in a subdirectory along with a
+markdown(.md) or a text file(.txt). These docs files are ignored.
