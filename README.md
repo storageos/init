@@ -1,5 +1,7 @@
 # Init Container for StorageOS
 
+[![Build Status](https://travis-ci.org/storageos/init.svg?branch=master)](https://travis-ci.org/storageos/init)
+
 Init container to prepare the environment for StorageOS.
 
 

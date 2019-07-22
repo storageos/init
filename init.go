@@ -83,7 +83,7 @@ func runScripts(scripts []string) error {
 
 		log.Printf("exec: %s", script)
 
-		_, stderr, err := runScript(script, "")
+		_, stderr, err := runScript(script)
 
 		// If stderr contains message, log and issue warning event.
 		if len(stderr) > 0 {
@@ -102,13 +102,13 @@ func runScripts(scripts []string) error {
 	return nil
 }
 
-// runScript runs a given script with an argument if specified, and attaches a
+// runScript runs a given script with arguments if specified, and attaches a
 // multiwriter to the stdout and stderr to write to the system pipes and to a
 // buffer to collect the messages. The captured stdout and stderr messages are
 // returned along with any error.
 // The actual logs of the script are still written to the stdout and stderr.
-func runScript(script, arg string) ([]byte, []byte, error) {
-	cmd := exec.Command(script, arg)
+func runScript(script string, arg ...string) ([]byte, []byte, error) {
+	cmd := exec.Command(script, arg...)
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 
