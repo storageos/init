@@ -18,6 +18,9 @@ spec:
       - name: sys
         mountPath: /sys
         mountPropagation: Bidirectional
+      - name: state
+        mountPath: /var/lib/storageos
+        mountPropagation: Bidirectional
     securityContext:
       privileged: true
       capabilities:
@@ -34,3 +37,6 @@ spec:
     - name: sys
       hostPath:
         path: /sys
+    - name: state
+      hostPath:
+        path: /var/lib/storageos
