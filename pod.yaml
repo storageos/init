@@ -8,6 +8,9 @@ spec:
   initContainers:
   - name: storageos-init
     image: storageos/init:test
+    env:
+      - name: NODE_IMAGE
+        value: storageos/node:1.4.0
     volumeMounts:
       - name: kernel-modules
         mountPath: /lib/modules
