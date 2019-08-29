@@ -2,6 +2,11 @@ IMAGE ?= storageos/init:test
 GO_BUILD_CMD = go build -v
 GO_ENV = GOOS=linux CGO_ENABLED=0
 
+# Test node image name.
+NODE_IMAGE ?= storageos/node:1.4.0
+# Test scripts path.
+SCRIPTS_PATH ?= /scripts
+
 all: unittest build
 
 .PHONY: build
@@ -25,9 +30,10 @@ run:
 		--cap-add=SYS_ADMIN \
 		--privileged \
 		-v /lib/modules:/lib/modules \
+		-v /var/lib/storageos:/var/lib/storageos:rshared \
 		-v /sys:/sys:rshared \
 		storageos/init:test \
-		/init -scripts=/scripts
+		/init -scripts=$(SCRIPTS_PATH) -nodeImage=$(NODE_IMAGE)
 
 # Generate mocks.
 generate:

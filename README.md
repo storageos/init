@@ -5,6 +5,21 @@
 Init container to prepare the environment for StorageOS.
 
 
+## Options
+
+* `-scripts` - absolute path of the scripts directory.
+* `-nodeImage` - StorageOS Node container image that the init container runs along. This should be used when running out of k8s.
+* `-dsName` - StorageOS k8s DaemonSet name. Use when running within a k8s cluster.
+* `-dsNamespace` - StorageOS k8s DaemonSet namespace. Use when running within a k8s cluster.
+
+
+## Environment Variables
+
+* `NODE_IMAGE` - StorageOS Node container image.
+* `DAEMONSET_NAME` - StorageOS DaemonSet name.
+* `DAEMONSET_NAMESPACE` - StorageOS DaemonSet namespace.
+
+
 ## Build
 
 ```
@@ -16,6 +31,12 @@ $ make image IMAGE=storageos/init:test
 
 Build the init container with `make image` and run it on the host with
 `make run`.
+
+Pass a StorageOS Node image and scripts directory as:
+
+```
+$ make run SCRIPTS_PATH=scripts/ NODE_IMAGE=storageos/node:1.4.0
+```
 
 
 ## Script Framework
