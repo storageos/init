@@ -36,13 +36,13 @@ run_kind() {
 }
 
 main() {
+    make unittest
+    make image
+
     prepare_host
     run_kind
 
-    echo "Ready for testing"
-
-    make unittest
-    make image
+    echo "Ready for e2e testing"
 
     # Copy the build container image into KinD.
     x=$(docker ps -f name=kind-1-control-plane -q)

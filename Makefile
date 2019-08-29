@@ -13,7 +13,7 @@ build:
 image:
 	docker build --no-cache . -f Dockerfile -t $(IMAGE)
 
-unittest:
+unittest: generate
 	go test -v -race `go list -v ./...`
 
 clean:
@@ -28,3 +28,7 @@ run:
 		-v /sys:/sys:rshared \
 		storageos/init:test \
 		/init -scripts=/scripts
+
+# Generate mocks.
+generate:
+	go generate ./...
