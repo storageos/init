@@ -5,11 +5,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/storageos/init/info/k8s"
 	"github.com/storageos/init/mocks"
+
+	"github.com/golang/mock/gomock"
 )
 
-func TestGetImageFromK8S(t *testing.T) {
+func TestGetParamsForK8SImageInfo(t *testing.T) {
 	testcases := []struct {
 		name            string
 		dsNameVar       string
@@ -36,20 +38,24 @@ func TestGetImageFromK8S(t *testing.T) {
 		},
 		{
 			name:            "default values",
-			wantDSName:      defaultDaemonSetName,
-			wantDSNamespace: defaultDaemonSetNamespace,
+			wantDSName:      k8s.DefaultDaemonSetName,
+			wantDSNamespace: k8s.DefaultDaemonSetNamespace,
+		},
+		{
+			name:           "flag and env var",
+			dsNameVar:      "ds3",
+			dsNamespaceVar: "ns3",
+			envvars: map[string]string{
+				daemonSetNameEnvVar:      "ds4",
+				daemonSetNamespaceEnvVar: "ns4",
+			},
+			wantDSName:      "ds3",
+			wantDSNamespace: "ns3",
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockCtrl := gomock.NewController(t)
-			defer mockCtrl.Finish()
-
-			mockInspector := mocks.NewMockInspector(mockCtrl)
-
-			mockInspector.EXPECT().GetDaemonSetContainerImage(tc.wantDSName, tc.wantDSNamespace, defaultContainerName).Times(1)
-
 			// Set env vars if provided.
 			if len(tc.envvars) > 0 {
 				for k, v := range tc.envvars {
@@ -60,7 +66,13 @@ func TestGetImageFromK8S(t *testing.T) {
 				}
 			}
 
-			getImageFromK8S(mockInspector, tc.dsNameVar, tc.dsNamespaceVar)
+			name, namespace := getParamsForK8SImageInfo(tc.dsNameVar, tc.dsNamespaceVar)
+			if name != tc.wantDSName {
+				t.Errorf("unexpected daemonset name:\n\t(WNT) %s\n\t(GOT) %s", tc.wantDSName, name)
+			}
+			if namespace != tc.wantDSNamespace {
+				t.Errorf("unexpected daemonset namespace:\n\t(WNT) %s\n\t(GOT) %s", tc.wantDSNamespace, namespace)
+			}
 		})
 	}
 }

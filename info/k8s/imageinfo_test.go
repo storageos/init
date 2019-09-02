@@ -1,17 +1,18 @@
-package inspector
+package k8s
 
 import (
 	"testing"
 
-	"k8s.io/client-go/kubernetes"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGetDaemonSetContainerImage(t *testing.T) {
+func TestGetContainerImage(t *testing.T) {
+	// Following are the attributes of the target DaemonSet and container in the
+	// tests.
 	testDSName := "some-daemonset"
 	testDSNamespace := "kube-system"
 	testContainerName := "containerA"
@@ -21,6 +22,7 @@ func TestGetDaemonSetContainerImage(t *testing.T) {
 		name        string
 		noDaemonSet bool
 		containers  []corev1.Container
+		defaultDS   bool
 		wantErr     bool
 	}{
 		{
@@ -59,6 +61,19 @@ func TestGetDaemonSetContainerImage(t *testing.T) {
 				},
 			},
 		},
+		{
+			// This should fail because default DaemonSet attributes are used
+			// and the DaemonSet with those attributes don't exist.
+			name: "default daemonset attributes",
+			containers: []corev1.Container{
+				{
+					Image: testImage,
+					Name:  testContainerName,
+				},
+			},
+			defaultDS: true,
+			wantErr:   true,
+		},
 	}
 
 	for _, tc := range testcases {
@@ -74,8 +89,14 @@ func TestGetDaemonSetContainerImage(t *testing.T) {
 				client = fake.NewSimpleClientset()
 			}
 
-			inspect := NewInspect(client)
-			img, err := inspect.GetDaemonSetContainerImage(testDSName, testDSNamespace, testContainerName)
+			info := NewImageInfo(client)
+
+			// Do not use the default DaemonSet attributes.
+			if !tc.defaultDS {
+				info.SetDaemonSet(testDSName, testDSNamespace)
+			}
+
+			img, err := info.GetContainerImage(testContainerName)
 			if err != nil {
 				if !tc.wantErr {
 					t.Fatalf("unexpected error: %v", err)
@@ -89,6 +110,7 @@ func TestGetDaemonSetContainerImage(t *testing.T) {
 	}
 }
 
+// getNoContainerDS returns a DaemonSet without any pod containers.
 func getNoContainerDS(name, namespace string) *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{

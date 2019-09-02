@@ -1,8 +1,6 @@
 // Package runner implements script runner.
 package runner
 
-//go:generate mockgen -destination=../../mocks/mock_runner.go -package=mocks github.com/storageos/init/script/runner Runner
-
 import (
 	"bytes"
 	"fmt"
@@ -13,11 +11,6 @@ import (
 	"sync"
 	"syscall"
 )
-
-// Runner is an interface for script runner.
-type Runner interface {
-	RunScript(script string, env map[string]string, arg ...string) ([]byte, []byte, error)
-}
 
 // Run implements Runner interface.
 type Run struct{}

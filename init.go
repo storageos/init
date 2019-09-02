@@ -6,19 +6,19 @@ import (
 	"log"
 	"os"
 
-	"github.com/storageos/init/k8s"
-	"github.com/storageos/init/k8s/inspector"
+	"github.com/storageos/init/info"
+	"github.com/storageos/init/info/k8s"
 	"github.com/storageos/init/script"
 	"github.com/storageos/init/script/runner"
+
+	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 )
 
 const (
-	daemonSetNameEnvVar       = "DAEMONSET_NAME"
-	daemonSetNamespaceEnvVar  = "DAEMONSET_NAMESPACE"
-	nodeImageEnvVar           = "NODE_IMAGE"
-	defaultDaemonSetName      = "storageos-daemonset"
-	defaultDaemonSetNamespace = "kube-system"
-	defaultContainerName      = "storageos"
+	daemonSetNameEnvVar      = "DAEMONSET_NAME"
+	daemonSetNamespaceEnvVar = "DAEMONSET_NAMESPACE"
+	nodeImageEnvVar          = "NODE_IMAGE"
 )
 
 func main() {
@@ -41,21 +41,23 @@ func main() {
 	// Attempt to get storageos node image.
 
 	if *nodeImage == "" {
-		// This is in k8s environment. Get the node image from StorageOS k8s
-		// resources.
-		kubeclient, err := k8s.NewK8SClient()
+		var imageInfo info.ImageInfoer
+
+		// This is in k8s environment.
+		kubeclient, err := newK8SClient()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Create a k8s inspector.
-		inspect := inspector.NewInspect(kubeclient)
+		// Create a k8s image info.
+		name, namespace := getParamsForK8SImageInfo(*dsName, *dsNamespace)
+		imageInfo = k8s.NewImageInfo(kubeclient).SetDaemonSet(name, namespace)
 
-		img, err := getImageFromK8S(inspect, *dsName, *dsNamespace)
+		// Get image.
+		storageosImage, err = imageInfo.GetContainerImage(k8s.DefaultContainerName)
 		if err != nil {
 			log.Fatal(err)
 		}
-		storageosImage = img
 	} else {
 		storageosImage = *nodeImage
 	}
@@ -88,16 +90,26 @@ func main() {
 	}
 }
 
-// getImageFromK8S fetches the StorageOS node container image from StorageOS
-// running on k8s cluster.
-func getImageFromK8S(inspect inspector.Inspector, dsName, dsNamespace string) (string, error) {
+// NewK8SClient attempts to get k8s cluster configuration and return a new
+// kubernetes client.
+func newK8SClient() (kubernetes.Interface, error) {
+	cfg, err := restclient.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(cfg)
+}
+
+// getParamsForK8SImageInfo returns the name and namespace to be used in k8s
+// ImageInfo.
+func getParamsForK8SImageInfo(dsName, dsNamespace string) (name, namespace string) {
 	// If DaemonSet name is not provided, read from env var.
 	if dsName == "" {
 		dsName = os.Getenv(daemonSetNameEnvVar)
 
 		// If DaemonSet name is still empty, use the default DaemonSet name.
 		if dsName == "" {
-			dsName = defaultDaemonSetName
+			dsName = k8s.DefaultDaemonSetName
 		}
 	}
 
@@ -108,11 +120,11 @@ func getImageFromK8S(inspect inspector.Inspector, dsName, dsNamespace string) (s
 		// If DaemonSet namespace still empty, use the default StorageOS
 		// deployment namespace.
 		if dsNamespace == "" {
-			dsNamespace = defaultDaemonSetNamespace
+			dsNamespace = k8s.DefaultDaemonSetNamespace
 		}
 	}
 
-	return inspect.GetDaemonSetContainerImage(dsName, dsNamespace, defaultContainerName)
+	return dsName, dsNamespace
 }
 
 // runScripts takes a list of scripts and env vars, and runs the scripts
@@ -120,7 +132,7 @@ func getImageFromK8S(inspect inspector.Inspector, dsName, dsNamespace string) (s
 // event.
 // Any preliminary checks that need to be performed before running a script can
 // be performed here.
-func runScripts(run runner.Runner, scripts []string, envVars map[string]string) error {
+func runScripts(run script.Runner, scripts []string, envVars map[string]string) error {
 	for _, script := range scripts {
 		// TODO: Check if the script has any preliminary checks to be performed
 		// before execution.
