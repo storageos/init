@@ -8,6 +8,7 @@ prepare_host() {
     sudo mount --make-shared /sys
     sudo mount --make-shared /
     sudo mount --make-shared /dev
+    docker run --name enable_lio --privileged --rm --cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /sys:/sys:rshared storageos/init:0.2
 }
 
 run_kind() {
@@ -35,16 +36,118 @@ run_kind() {
     echo
 }
 
+# This tests the dataplane upgrade on the host, independent of any k8s cluster.
+nok8s_dpupgrade() {
+    # Run StorageOS and create old dp database.
+    docker pull storageos/node:1.3.0
+    NODE_IMAGE=storageos/node:1.3.0 bash run-stos.sh
+    sleep 10
+
+    # Wait until storageos node is healthy.
+    health=$(docker inspect storageos --type container | jq '.[0] | .State.Health.Status')
+    until [ $health == '"healthy"' ]
+    do
+        health=$(docker inspect storageos --type container | jq '.[0] | .State.Health.Status')
+        echo "storageos status $health"
+        echo "waiting for storageos node to be healthy..."
+        sleep 3
+    done
+
+    echo
+    echo "storageos node is healthy"
+
+    # Stop storageos.
+    docker rm storageos -f
+
+    # Run dp upgrade on old database.
+    echo
+    echo "Attempting dp upgrade"
+    UPGRADELOGS=/tmp/dpupgrade.log
+    make run > $UPGRADELOGS
+    if ! grep "successfully upgraded database" $UPGRADELOGS; then
+        echo "dpupgrade failed!"
+        echo
+        echo "init logs:"
+        cat $UPGRADELOGS
+        exit 1
+    fi
+    echo "upgrade successful"
+}
+
+# This tests the dataplane upgrade in a k8s cluster by updating node 1.3.0
+# storageos node to 1.4.0.
+k8s_dpupgrade() {
+    # Get KinD container id.
+    x=$(docker ps -f name=kind-1-control-plane -q)
+
+    # Re-tag node 1.3.0 as storageos/node:1.4.0 and copy into KinD.
+    # This is temporary until storageos/node:1.4.0 is released.
+    docker tag storageos/node:1.3.0 storageos/node:1.4.0
+    docker save storageos/node:1.4.0 > stos140.tar
+    docker cp stos140.tar $x:/stos140.tar
+    docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/storageos/node:1.4.0 /stos140.tar"
+
+    # Get storageos pod.
+    stospod=$(kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep storageos)
+
+    echo "Waiting for the storageos container to be ready"
+    # First and only container in this pod is the storageos container.
+    until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
+    echo "storageos pod found ready"
+
+    sleep 5
+
+    # Patch DaemonSet with new storageos version.
+    kubectl set image ds/storageos-daemonset storageos=storageos/node:1.4.0
+
+    # kill the pod for the update to apply.
+    kubectl delete pod $stospod
+
+    sleep 5
+
+    # Get new pod name.
+    stospod=$(kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep storageos)
+
+    echo "Waiting for the storageos pod to be ready"
+    until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
+    echo "storageos pod found ready"
+
+    echo "checking init container logs"
+    UPGRADELOGS=/tmp/dpupgrade-k8s.log
+    kubectl logs $stospod -c storageos-init > $UPGRADELOGS
+    echo
+
+    if ! grep "successfully upgraded database" $UPGRADELOGS; then
+        echo "dpupgrade failed!"
+        echo
+        echo "init logs:"
+        cat $UPGRADELOGS
+        exit 1
+    fi
+    echo "upgrade successful"
+    echo
+}
+
 main() {
-    prepare_host
-    run_kind
-
-    echo "Ready for testing"
-
     make unittest
     make image
 
-    # Copy the build container image into KinD.
+    prepare_host
+    run_kind
+
+    echo "Ready for e2e testing"
+
+    # Run out of k8s dpupgrade test.
+    echo
+    echo "No k8s dp upgrade test"
+    echo
+    nok8s_dpupgrade
+
+    echo
+    echo "Prepare for k8s test"
+    echo
+
+    # Copy the init container image into KinD.
     x=$(docker ps -f name=kind-1-control-plane -q)
     docker save storageos/init:test > init.tar
     docker cp init.tar $x:/init.tar
@@ -52,18 +155,37 @@ main() {
     # containerd load image from tar archive (KinD with containerd).
     docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/storageos/init:test /init.tar"
 
-    kubectl apply -f pod.yaml
+    # Load storageos node 1.3.0 container image into KinD.
+    docker pull storageos/node:1.3.0
+    docker save storageos/node:1.3.0 > stos130.tar
+    docker cp stos130.tar $x:/stos130.tar
+    docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/storageos/node:1.3.0 /stos130.tar"
 
-    echo "Waiting for the test-pod to run"
-    until kubectl get pod test-pod --no-headers -o go-template='{{.status.phase}}' | grep -q Running; do sleep 5; done
-    echo "test-pod found running"
+    # Create storageos daemonset with node 1.3.0
+    kubectl apply -f daemonset.yaml
+    sleep 5
 
-    echo "init container logs"
-    kubectl logs test-pod -c storageos-init
+    # Run dp upgrade test.
+    k8s_dpupgrade
+
+    # Get pod name.
+    stospod=$(kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep storageos)
+
+    # NOTE: Once dataplane upgrade test is no longer needed, remove the
+    # k8s_dpupgrade call above and uncomment the following wait code.
+
+    # echo "Waiting for the storageos pod to be ready"
+    # until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
+    # # until kubectl get pod $stospod --no-headers -o go-template='{{.status.phase}}' | grep -q Running; do sleep 5; done
+    # echo "storageos pod found ready"
+
+    echo
+    echo "init container logs:"
+    kubectl logs $stospod -c storageos-init
     echo
 
     echo "Checking init container exit code"
-    exitCode=$(kubectl get pod test-pod --no-headers -o go-template='{{(index .status.initContainerStatuses 0).state.terminated.exitCode}}')
+    exitCode=$(kubectl get pod $stospod --no-headers -o go-template='{{(index .status.initContainerStatuses 0).state.terminated.exitCode}}')
     if [ "$exitCode" == "0" ]; then
         echo "init successful!"
         exit 0
