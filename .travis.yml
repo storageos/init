@@ -2,6 +2,9 @@ sudo: required
 
 language: go
 
+go:
+  - "1.12.9"
+
 env:
   global:
     - IMAGE_NAME=storageos/init
