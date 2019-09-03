@@ -1,4 +1,4 @@
-FROM golang:1.12.7 AS build
+FROM golang:1.12.9 AS build
 WORKDIR /go/src/github.com/storageos/init/
 COPY . /go/src/github.com/storageos/init/
 RUN make build
