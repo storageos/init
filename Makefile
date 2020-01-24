@@ -38,3 +38,8 @@ run:
 # Generate mocks.
 generate:
 	go generate ./...
+
+# Prepare the repo for a new release. Run:
+#   NEW_VERSION=<version> make release
+release:
+	sed -i -e "s/version=.*/version=\"$(NEW_VERSION)\" \\\/g" Dockerfile
