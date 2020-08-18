@@ -8,12 +8,11 @@ prepare_host() {
     sudo mount --make-shared /sys
     sudo mount --make-shared /
     sudo mount --make-shared /dev
-    docker run --name enable_lio --privileged --rm --cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /sys:/sys:rshared storageos/init:0.2
 }
 
 run_kind() {
     echo "Download kind binary..."
-    wget -O kind 'https://docs.google.com/uc?export=download&id=1-oy-ui0ZE_T3Fglz1c8ZgnW8U-A4yS8u' --no-check-certificate && chmod +x kind && sudo mv kind /usr/local/bin/
+    wget -O kind 'https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64' --no-check-certificate && chmod +x kind && sudo mv kind /usr/local/bin/
 
     echo "Download kubectl..."
     curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/"${K8S_VERSION}"/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -24,7 +23,8 @@ run_kind() {
     kind create cluster --image storageos/kind-node:"$K8S_VERSION" --name kind-1
 
     echo "Export kubeconfig..."
-    export KUBECONFIG="$(kind get kubeconfig-path --name="kind-1")"
+    kind get kubeconfig --name="kind-1" > kubeconfig.yaml
+    export KUBECONFIG="kubeconfig.yaml"
     echo
 
     echo "Get cluster info..."
@@ -36,98 +36,6 @@ run_kind() {
     echo
 }
 
-# This tests the dataplane upgrade on the host, independent of any k8s cluster.
-nok8s_dpupgrade() {
-    # Run StorageOS and create old dp database.
-    docker pull storageos/node:1.3.0
-    NODE_IMAGE=storageos/node:1.3.0 bash run-stos.sh
-    sleep 10
-
-    # Wait until storageos node is healthy.
-    health=$(docker inspect storageos --type container | jq '.[0] | .State.Health.Status')
-    until [ $health == '"healthy"' ]
-    do
-        health=$(docker inspect storageos --type container | jq '.[0] | .State.Health.Status')
-        echo "storageos status $health"
-        echo "waiting for storageos node to be healthy..."
-        sleep 3
-    done
-
-    echo
-    echo "storageos node is healthy"
-
-    # Stop storageos.
-    docker rm storageos -f
-
-    # Run dp upgrade on old database.
-    echo
-    echo "Attempting dp upgrade"
-    UPGRADELOGS=/tmp/dpupgrade.log
-    make run > $UPGRADELOGS
-    if ! grep "successfully upgraded database" $UPGRADELOGS; then
-        echo "dpupgrade failed!"
-        echo
-        echo "init logs:"
-        cat $UPGRADELOGS
-        exit 1
-    fi
-    echo "upgrade successful"
-}
-
-# This tests the dataplane upgrade in a k8s cluster by updating node 1.3.0
-# storageos node to 1.4.0.
-k8s_dpupgrade() {
-    # Get KinD container id.
-    x=$(docker ps -f name=kind-1-control-plane -q)
-
-    # Re-tag node 1.3.0 as storageos/node:1.4.0 and copy into KinD.
-    # This is temporary until storageos/node:1.4.0 is released.
-    docker tag storageos/node:1.3.0 storageos/node:1.4.0
-    docker save storageos/node:1.4.0 > stos140.tar
-    docker cp stos140.tar $x:/stos140.tar
-    docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/storageos/node:1.4.0 /stos140.tar"
-
-    # Get storageos pod.
-    stospod=$(kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep storageos)
-
-    echo "Waiting for the storageos container to be ready"
-    # First and only container in this pod is the storageos container.
-    until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
-    echo "storageos pod found ready"
-
-    sleep 5
-
-    # Patch DaemonSet with new storageos version.
-    kubectl set image ds/storageos-daemonset storageos=storageos/node:1.4.0
-
-    # kill the pod for the update to apply.
-    kubectl delete pod $stospod
-
-    sleep 5
-
-    # Get new pod name.
-    stospod=$(kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep storageos)
-
-    echo "Waiting for the storageos pod to be ready"
-    until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
-    echo "storageos pod found ready"
-
-    echo "checking init container logs"
-    UPGRADELOGS=/tmp/dpupgrade-k8s.log
-    kubectl logs $stospod -c storageos-init > $UPGRADELOGS
-    echo
-
-    if ! grep "successfully upgraded database" $UPGRADELOGS; then
-        echo "dpupgrade failed!"
-        echo
-        echo "init logs:"
-        cat $UPGRADELOGS
-        exit 1
-    fi
-    echo "upgrade successful"
-    echo
-}
-
 main() {
     make unittest
     make image
@@ -136,12 +44,6 @@ main() {
     run_kind
 
     echo "Ready for e2e testing"
-
-    # Run out of k8s dpupgrade test.
-    echo
-    echo "No k8s dp upgrade test"
-    echo
-    nok8s_dpupgrade
 
     echo
     echo "Prepare for k8s test"
@@ -155,29 +57,23 @@ main() {
     # containerd load image from tar archive (KinD with containerd).
     docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/storageos/init:test /init.tar"
 
-    # Load storageos node 1.3.0 container image into KinD.
-    docker pull storageos/node:1.3.0
-    docker save storageos/node:1.3.0 > stos130.tar
-    docker cp stos130.tar $x:/stos130.tar
-    docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/storageos/node:1.3.0 /stos130.tar"
+    # Use busybox in place of the node container.
+    docker pull busybox:1.32
+    docker save busybox:1.32 > busybox.tar
+    docker cp busybox.tar $x:/busybox.tar
+    docker exec $x bash -c "ctr -n k8s.io images import --base-name docker.io/busybox:1.32 /busybox.tar"
 
-    # Create storageos daemonset with node 1.3.0
+    # Create storageos daemonset with node v1.5.3
     kubectl apply -f daemonset.yaml
     sleep 5
-
-    # Run dp upgrade test.
-    k8s_dpupgrade
 
     # Get pod name.
     stospod=$(kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}' | grep storageos)
 
-    # NOTE: Once dataplane upgrade test is no longer needed, remove the
-    # k8s_dpupgrade call above and uncomment the following wait code.
-
-    # echo "Waiting for the storageos pod to be ready"
-    # until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
-    # # until kubectl get pod $stospod --no-headers -o go-template='{{.status.phase}}' | grep -q Running; do sleep 5; done
-    # echo "storageos pod found ready"
+    echo "Waiting for the storageos pod to be ready"
+    until kubectl get pod $stospod --template='{{ (index .status.containerStatuses 0).ready }}' | grep -q true; do sleep 5; done
+    # until kubectl get pod $stospod --no-headers -o go-template='{{.status.phase}}' | grep -q Running; do sleep 5; done
+    echo "storageos pod found ready"
 
     echo
     echo "init container logs:"

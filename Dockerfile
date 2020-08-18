@@ -1,4 +1,4 @@
-FROM golang:1.13.5 AS build
+FROM golang:1.15.0 AS build
 
 WORKDIR /go/src/github.com/storageos/init/
 COPY . /go/src/github.com/storageos/init/
@@ -8,7 +8,7 @@ FROM registry.access.redhat.com/ubi8/ubi
 LABEL name="StorageOS Init" \
     maintainer="support@storageos.com" \
     vendor="StorageOS" \
-    version="1.0.1" \
+    version="v2.0.0" \
     release="1" \
     distribution-scope="public" \
     architecture="x86_64" \
