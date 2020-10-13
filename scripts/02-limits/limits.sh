@@ -60,7 +60,7 @@ if [ -n "${RECOMMENDED_MAX_PIDS_LIMIT}" ]; then
     if [ $RECOMMENDED_MAX_PIDS_LIMIT -gt $max_pids_limit ]; then
         echo "WARNING: Effective max.pids limit ($max_pids_limit) less than RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
     else
-        echo "SUCCESS: Effective max.pids limit ($max_pids_limit) at least RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
+        echo "OK: Effective max.pids limit ($max_pids_limit) at least RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
     fi
     exit 0
 fi
