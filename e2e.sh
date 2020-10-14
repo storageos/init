@@ -2,6 +2,8 @@
 
 set -Eeuxo pipefail
 
+cluster="init"
+
 prepare_host() {
     sudo apt -y update
     sudo apt -y install linux-modules-extra-$(uname -r)
@@ -18,12 +20,14 @@ run_kind() {
     curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/"${K8S_VERSION}"/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
     echo
 
-    echo "Create Kubernetes cluster with kind..."
-    # kind create cluster --image=kindest/node:"$K8S_VERSION"
-    kind create cluster --image storageos/kind-node:"$K8S_VERSION" --name kind-1
+    if [ $(kind get clusters | grep -c ^$cluster$) -eq 0 ]; then
+        echo "Create Kubernetes cluster with kind..."
+        # kind create cluster --image=kindest/node:"$K8S_VERSION"
+        kind create cluster --image storageos/kind-node:"$K8S_VERSION" --name "$cluster"
+    fi
 
     echo "Export kubeconfig..."
-    kind get kubeconfig --name="kind-1" > kubeconfig.yaml
+    kind get kubeconfig --name="$cluster" > kubeconfig.yaml
     export KUBECONFIG="kubeconfig.yaml"
     echo
 
@@ -50,7 +54,7 @@ main() {
     echo
 
     # Copy the init container image into KinD.
-    x=$(docker ps -f name=kind-1-control-plane -q)
+    x=$(docker ps -f name=${cluster}-control-plane -q)
     docker save storageos/init:test > init.tar
     docker cp init.tar $x:/init.tar
 
@@ -82,6 +86,7 @@ main() {
 
     echo "Checking init container exit code"
     exitCode=$(kubectl get pod $stospod --no-headers -o go-template='{{(index .status.initContainerStatuses 0).state.terminated.exitCode}}')
+    kubectl delete -f daemonset.yaml
     if [ "$exitCode" == "0" ]; then
         echo "init successful!"
         exit 0
