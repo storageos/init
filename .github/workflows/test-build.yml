@@ -18,7 +18,6 @@ jobs:
         run: make test
 
   build-image:
-    needs: test
     runs-on: ubuntu-latest
     name: Build container image
     steps:
