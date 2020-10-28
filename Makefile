@@ -15,6 +15,10 @@ build:
 	@echo "Building init"
 	$(GO_ENV) $(GO_BUILD_CMD) -o ./build/_output/bin/init .
 
+tidy:
+	go mod tidy -v
+	go mod vendor -v
+
 # Build the docker image
 docker-build::
 	docker build --no-cache . -f Dockerfile -t $(IMAGE)

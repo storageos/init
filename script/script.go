@@ -1,12 +1,14 @@
 // Package script provides helpers to interact with scripts.
 package script
 
-//go:generate mockgen -destination=../mocks/mock_runner.go -package=mocks github.com/storageos/init/script Runner
+//go:generate go run -mod=mod github.com/golang/mock/mockgen --build_flags=--mod=vendor -destination=../mocks/mock_runner.go -package=mocks github.com/storageos/init/script Runner
 
 import (
 	"log"
 	"os"
 	"path/filepath"
+
+	_ "github.com/golang/mock/mockgen/model"
 )
 
 // Runner is an interface for script runner.
