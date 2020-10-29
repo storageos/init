@@ -5,35 +5,34 @@
 package mocks
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
-// MockRunner is a mock of Runner interface.
+// MockRunner is a mock of Runner interface
 type MockRunner struct {
 	ctrl     *gomock.Controller
 	recorder *MockRunnerMockRecorder
 }
 
-// MockRunnerMockRecorder is the mock recorder for MockRunner.
+// MockRunnerMockRecorder is the mock recorder for MockRunner
 type MockRunnerMockRecorder struct {
 	mock *MockRunner
 }
 
-// NewMockRunner creates a new mock instance.
+// NewMockRunner creates a new mock instance
 func NewMockRunner(ctrl *gomock.Controller) *MockRunner {
 	mock := &MockRunner{ctrl: ctrl}
 	mock.recorder = &MockRunnerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 	return m.recorder
 }
 
-// RunScript mocks base method.
+// RunScript mocks base method
 func (m *MockRunner) RunScript(arg0 string, arg1 map[string]string, arg2 ...string) ([]byte, []byte, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -47,7 +46,7 @@ func (m *MockRunner) RunScript(arg0 string, arg1 map[string]string, arg2 ...stri
 	return ret0, ret1, ret2
 }
 
-// RunScript indicates an expected call of RunScript.
+// RunScript indicates an expected call of RunScript
 func (mr *MockRunnerMockRecorder) RunScript(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)

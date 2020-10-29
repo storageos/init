@@ -29,7 +29,7 @@ jobs:
     - script: ./e2e.sh
     - stage: deploy
       script:
-        - make image
+        - make docker-build
       before_deploy:
         - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
       deploy:
