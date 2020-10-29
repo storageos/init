@@ -26,7 +26,7 @@ make test
 ## Build
 
 ```console
-make image IMAGE=storageos/init:test
+make docker-build IMAGE=storageos/init:test
 ```
 
 ## Release
@@ -39,7 +39,7 @@ NEW_VERSION=<version> make release
 
 ## Run it on host
 
-Build the init container with `make image` and run it on the host with
+Build the init container with `make docker-build` and run it on the host with
 `make run`.
 
 Pass a StorageOS Node image and scripts directory as:

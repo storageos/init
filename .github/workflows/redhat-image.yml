@@ -27,7 +27,7 @@ jobs:
           username: ${{ secrets.RH_USERNAME }}
           password: ${{ secrets.RH_TOKEN }}
       - name: Set image env var
-        run: echo "IMAGE=scan.connect.redhat.com/${{ secrets.OSPID }}/api-manager:${{ github.event.inputs.imageTag }}" >> $GITHUB_ENV
+        run: echo "IMAGE=scan.connect.redhat.com/${{ secrets.OSPID }}/init:${{ github.event.inputs.imageTag }}" >> $GITHUB_ENV
       - name: Build container image
         run: make docker-build
       - name: Push container image
