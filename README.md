@@ -1,6 +1,6 @@
 # Init Container for StorageOS
 
-[![Test and build image](https://github.com/storageos/init/workflows/Test%20and%20build%20image/badge.svg)](https://github.com/storageos/init/actions?query=workflow%3A%22Test+and+build+image%22) [![Build Status](https://travis-ci.org/storageos/init.svg?branch=master)](https://travis-ci.org/storageos/init) 
+[![Test and build image](https://github.com/storageos/init/workflows/Test%20and%20build%20image/badge.svg)](https://github.com/storageos/init/actions?query=workflow%3A%22Test+and+build+image%22) [![Build Status](https://travis-ci.com/storageos/init.svg?branch=master)](https://travis-ci.com/storageos/init) 
 
 Init container to prepare the environment for StorageOS.
 
