@@ -20,7 +20,7 @@ tidy:
 	go mod vendor -v
 
 # Build the docker image
-docker-build::
+docker-build:
 	docker build --no-cache . -f Dockerfile -t $(IMAGE)
 
 # Push the docker image
