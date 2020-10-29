@@ -41,8 +41,8 @@ run_kind() {
 }
 
 main() {
-    make unittest
-    make image
+    make test
+    make docker-build
 
     prepare_host
     run_kind
