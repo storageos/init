@@ -2,6 +2,12 @@
 
 set -e
 
+function date_time_in_rfc3339() {
+    local msg="$1"
+    timestamp_utc=$(date -u --rfc-3339=seconds)
+    echo $timestamp_utc $msg
+}
+
 function module_error_log() {
     local mod="$1"
     local mod_dir="$2"
@@ -13,23 +19,23 @@ function module_error_log() {
 # Configfs can be built in the kernel, hence the module 
 # initstate file will not exist. Even though, the mount
 # is present and working
-echo "Checking configfs"
+date_time_in_rfc3339 "Checking configfs"
 if mount | grep -q "^configfs on /sys/kernel/config"; then
-    echo "configfs mounted on sys/kernel/config"
+    date_time_in_rfc3339 "configfs mounted on sys/kernel/config"
 else
-    echo "configfs not mounted, checking if kmod is loaded"
+    date_time_in_rfc3339 "configfs not mounted, checking if kmod is loaded"
     state_file=/sys/module/configfs/initstate
     if [ -f "$state_file" ] && grep -q live "$state_file"; then
-        echo "configfs mod is loaded"
+        date_time_in_rfc3339 "configfs mod is loaded"
     else
-        echo "configfs not loaded, executing: modprobe -b configfs"
+        date_time_in_rfc3339 "configfs not loaded, executing: modprobe -b configfs"
         modprobe -b configfs
     fi
 
     if mount | grep -q configfs; then
-        echo "configfs mounted"
+        date_time_in_rfc3339 "configfs mounted"
     else
-        echo "mounting configfs /sys/kernel/config"
+        date_time_in_rfc3339 "mounting configfs /sys/kernel/config"
         mount -t configfs configfs /sys/kernel/config
     fi
 fi
@@ -44,16 +50,16 @@ loop_dir="$target_dir"/loopback
 for mod in target_core_mod tcm_loop target_core_file uio target_core_user; do
     state_file=/sys/module/$mod/initstate
     if [ -f "$state_file" ] && grep -q live "$state_file"; then
-        echo "Module $mod is running"
+        date_time_in_rfc3339 "Module $mod is running"
     else 
-        echo "Module $mod is not running"
-        echo "--> executing \"modprobe -b $mod\""
+        date_time_in_rfc3339 "Module $mod is not running"
+        date_time_in_rfc3339 "--> executing \"modprobe -b $mod\""
         if ! modprobe -b $mod; then
             # core_user and uio are not mandatory
             if [ "$mod" != "target_core_user" ] && [ "$mod" != "uio" ]; then
                 exit 1
             else 
-                echo "Couldn't enable $mod"
+                date_time_in_rfc3339 "Couldn't enable $mod"
             fi
         fi
         # Enable module at boot
@@ -65,8 +71,8 @@ done
 # Check if the modules loaded have its
 # directories available on top of configfs
 
-[ ! -d "$target_dir" ] && echo "$target_dir doesn't exist" && module_error_log "target_core_mod" "$target_dir"
-[ ! -d "$core_dir" ]   && echo "$core_dir doesn't exist"   && module_error_log "target_core_file" "$core_dir"
-[ ! -d "$loop_dir" ]   && echo "$loop_dir doesn't exist. Creating dir manually..." && mkdir $loop_dir
+[ ! -d "$target_dir" ] && date_time_in_rfc3339 "$target_dir doesn't exist" && module_error_log "target_core_mod" "$target_dir"
+[ ! -d "$core_dir" ]   && date_time_in_rfc3339 "$core_dir doesn't exist"   && module_error_log "target_core_file" "$core_dir"
+[ ! -d "$loop_dir" ]   && date_time_in_rfc3339 "$loop_dir doesn't exist. Creating dir manually..." && mkdir $loop_dir
 
-echo "LIO set up is ready!"
+date_time_in_rfc3339 "LIO set up is ready!"

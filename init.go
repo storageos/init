@@ -22,6 +22,9 @@ const (
 )
 
 func main() {
+	log.SetFlags(0)
+	log.SetOutput(new(logWriter))
+
 	scriptsDir := flag.String("scripts", "", "absolute path of the scripts directory")
 	dsName := flag.String("dsName", "", "name of the StorageOS DaemonSet")
 	dsNamespace := flag.String("dsNamespace", "", "namespace of the StorageOS DaemonSet")
@@ -79,10 +82,11 @@ func main() {
 		log.Fatalf("failed to get list of scripts: %v", err)
 	}
 
+	log.SetFlags(log.LUTC)
 	log.Println("scripts:", allScripts)
 
 	// Create a script runner.
-	run := runner.NewRun()
+	run := runner.NewRun(new(logWriter))
 
 	// Run all the scripts.
 	if err := runScripts(run, allScripts, scriptEnvVar); err != nil {
