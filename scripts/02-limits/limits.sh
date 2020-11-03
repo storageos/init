@@ -2,7 +2,7 @@
 
 set -e
 
-function date_time_in_rfc3339() {
+function log() {
     local msg="$1"
     timestamp_utc=$(date -u --rfc-3339=seconds)
     echo $timestamp_utc $msg
@@ -52,24 +52,24 @@ done
 
 # TBC: Don't fail if we can't determine limit.
 if [ $max_pids_limit -eq $default_max_pids_limit ]; then
-    date_time_in_rfc3339 "WARNING: Unable to determine effective max.pids limit"
+    log "WARNING: Unable to determine effective max.pids limit"
     exit 0
 fi
 
 # Fail if MINIMUM_MAX_PIDS_LIMIT is set and is greater than current limit.
 if [[ -n "${MINIMUM_MAX_PIDS_LIMIT}" && $MINIMUM_MAX_PIDS_LIMIT -gt $max_pids_limit ]]; then
-    date_time_in_rfc3339 "ERROR: Effective max.pids limit ($max_pids_limit) less than MINIMUM_MAX_PIDS_LIMIT ($MINIMUM_MAX_PIDS_LIMIT)"
+    log "ERROR: Effective max.pids limit ($max_pids_limit) less than MINIMUM_MAX_PIDS_LIMIT ($MINIMUM_MAX_PIDS_LIMIT)"
     exit 1
 fi
 
 if [ -n "${RECOMMENDED_MAX_PIDS_LIMIT}" ]; then
     if [ $RECOMMENDED_MAX_PIDS_LIMIT -gt $max_pids_limit ]; then
-        date_time_in_rfc3339 "WARNING: Effective max.pids limit ($max_pids_limit) less than RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
+        log "WARNING: Effective max.pids limit ($max_pids_limit) less than RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
     else
-        date_time_in_rfc3339 "OK: Effective max.pids limit ($max_pids_limit) at least RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
+        log "OK: Effective max.pids limit ($max_pids_limit) at least RECOMMENDED_MAX_PIDS_LIMIT ($RECOMMENDED_MAX_PIDS_LIMIT)"
     fi
     exit 0
 fi
 
 # No requirements set, just output current limit.
-date_time_in_rfc3339 "Effective max.pids limit: $max_pids_limit"
+log "Effective max.pids limit: $max_pids_limit"
