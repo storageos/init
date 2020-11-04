@@ -13,11 +13,13 @@ import (
 )
 
 // Run implements Runner interface.
-type Run struct{}
+type Run struct {
+	logger *log.Logger
+}
 
 // NewRun returns an initialized Run.
-func NewRun() *Run {
-	return &Run{}
+func NewRun(log *log.Logger) *Run {
+	return &Run{log}
 }
 
 // RunScript runs a given script with arguments if specified, and attaches a

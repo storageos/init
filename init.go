@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/storageos/init/info"
 	"github.com/storageos/init/info/k8s"
@@ -21,7 +22,18 @@ const (
 	nodeImageEnvVar          = "NODE_IMAGE"
 )
 
+const timeFormat = time.RFC3339
+
+type logWriter struct{}
+
+func (lw *logWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(time.Now().UTC().Format(timeFormat), " ", string(bytes))
+}
+
 func main() {
+	log := log.New(new(logWriter), "", log.LstdFlags)
+	log.SetFlags(0)
+
 	scriptsDir := flag.String("scripts", "", "absolute path of the scripts directory")
 	dsName := flag.String("dsName", "", "name of the StorageOS DaemonSet")
 	dsNamespace := flag.String("dsNamespace", "", "namespace of the StorageOS DaemonSet")
@@ -82,10 +94,10 @@ func main() {
 	log.Println("scripts:", allScripts)
 
 	// Create a script runner.
-	run := runner.NewRun()
+	run := runner.NewRun(log)
 
 	// Run all the scripts.
-	if err := runScripts(run, allScripts, scriptEnvVar); err != nil {
+	if err := runScripts(log, run, allScripts, scriptEnvVar); err != nil {
 		log.Fatalf("init failed: %v", err)
 	}
 }
@@ -132,7 +144,7 @@ func getParamsForK8SImageInfo(dsName, dsNamespace string) (name, namespace strin
 // event.
 // Any preliminary checks that need to be performed before running a script can
 // be performed here.
-func runScripts(run script.Runner, scripts []string, envVars map[string]string) error {
+func runScripts(log *log.Logger, run script.Runner, scripts []string, envVars map[string]string) error {
 	for _, script := range scripts {
 		// TODO: Check if the script has any preliminary checks to be performed
 		// before execution.
