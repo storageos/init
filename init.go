@@ -97,7 +97,7 @@ func main() {
 	run := runner.NewRun(log)
 
 	// Run all the scripts.
-	if err := runScripts(run, allScripts, scriptEnvVar); err != nil {
+	if err := runScripts(log, run, allScripts, scriptEnvVar); err != nil {
 		log.Fatalf("init failed: %v", err)
 	}
 }
@@ -144,7 +144,7 @@ func getParamsForK8SImageInfo(dsName, dsNamespace string) (name, namespace strin
 // event.
 // Any preliminary checks that need to be performed before running a script can
 // be performed here.
-func runScripts(run script.Runner, scripts []string, envVars map[string]string) error {
+func runScripts(log *log.Logger, run script.Runner, scripts []string, envVars map[string]string) error {
 	for _, script := range scripts {
 		// TODO: Check if the script has any preliminary checks to be performed
 		// before execution.
