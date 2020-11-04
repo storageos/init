@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/storageos/init/info"
 	"github.com/storageos/init/info/k8s"
@@ -21,9 +22,17 @@ const (
 	nodeImageEnvVar          = "NODE_IMAGE"
 )
 
+const timeFormat = time.RFC3339
+
+type logWriter struct{}
+
+func (lw *logWriter) Write(bytes []byte) (int, error) {
+	return fmt.Print(time.Now().UTC().Format(timeFormat), " ", string(bytes))
+}
+
 func main() {
+	log := log.New(new(logWriter), "", log.LstdFlags)
 	log.SetFlags(0)
-	log.SetOutput(new(logWriter))
 
 	scriptsDir := flag.String("scripts", "", "absolute path of the scripts directory")
 	dsName := flag.String("dsName", "", "name of the StorageOS DaemonSet")
@@ -82,11 +91,10 @@ func main() {
 		log.Fatalf("failed to get list of scripts: %v", err)
 	}
 
-	log.SetFlags(log.LUTC)
 	log.Println("scripts:", allScripts)
 
 	// Create a script runner.
-	run := runner.NewRun(new(logWriter))
+	run := runner.NewRun(log)
 
 	// Run all the scripts.
 	if err := runScripts(run, allScripts, scriptEnvVar); err != nil {

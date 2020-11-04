@@ -10,24 +10,15 @@ import (
 	"os/exec"
 	"sync"
 	"syscall"
-	"time"
 )
-
-const timeFormat = time.RFC3339
-
-type logWriter struct{}
-
-func (lw *logWriter) Write(bytes []byte) (int, error) {
-	return fmt.Print(time.Now().UTC().Format(timeFormat), " ", string(bytes))
-}
 
 // Run implements Runner interface.
 type Run struct {
-	lw *logWriter
+	log *log.Logger
 }
 
 // NewRun returns an initialized Run.
-func NewRun() *Run {
+func NewRun(*log.Logger) *Run {
 	return &Run{}
 }
 
