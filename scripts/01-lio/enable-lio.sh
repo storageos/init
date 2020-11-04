@@ -4,7 +4,7 @@ set -e
 
 function log() {
     local msg="$1"
-    timestamp_utc=$(date -u --rfc-3339=seconds)
+    timestamp_utc=$(date -u --rfc-3339=seconds | sed 's/ /T/')
     echo $timestamp_utc $msg
 }
 
