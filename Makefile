@@ -29,7 +29,7 @@ docker-push:
 
 # Run tests
 test: generate fmt vet
-	go test -v -race `go list -v ./...`
+	go test -mod=mod -v -race `go list -v ./...`
 
 # Run go fmt against code
 fmt:
