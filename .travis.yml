@@ -30,14 +30,3 @@ jobs:
     - stage: deploy
       script:
         - make docker-build
-      before_deploy:
-        - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
-      deploy:
-        - provider: script
-          script: bash deploy.sh tagged
-          on:
-            tags: true
-        - provider: script
-          script: bash deploy.sh develop
-          on:
-            branch: master
