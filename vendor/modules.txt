@@ -7,7 +7,7 @@ github.com/evanphx/json-patch
 ## explicit
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang/mock v1.4.4
+# github.com/golang/mock v1.6.0
 ## explicit
 github.com/golang/mock/gomock
 github.com/golang/mock/mockgen/model
@@ -33,10 +33,9 @@ github.com/modern-go/reflect2
 # github.com/pkg/errors v0.8.1
 ## explicit
 github.com/pkg/errors
-# golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
-## explicit
+# golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -46,11 +45,11 @@ golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456
-## explicit
+# golang.org/x/sys v0.0.0-20210510120138-977fb7262007
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.3
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
