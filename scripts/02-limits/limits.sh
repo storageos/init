@@ -23,7 +23,7 @@ dirprefix="/sys/fs/cgroup/pids"
 for cg in $(grep :pids: /proc/self/cgroup); do
     # Parse out the slice field from the cgroup output.
     # <cgroup_id>:<subystem>:<slice>
-    dirsuffix=$(echo "$cg" | awk -F\: '{print $3}')
+    dirsuffix=$(echo "$cg" | sed 's|^[^/]*/|/|g')
 
     # The slice field can have a prefix that is not part of the directory path.
     # This must be stripped iteratively until we find the valid slice directory.
@@ -37,6 +37,7 @@ for cg in $(grep :pids: /proc/self/cgroup); do
     # value.
     while [ -f "${dir}/pids.max" ]; do
         max_pids=$(read_max_pids "${dir}")
+
         if [[ $max_pids -gt 0 && $max_pids -lt $max_pids_limit ]]; then
             max_pids_limit=$max_pids
         fi
