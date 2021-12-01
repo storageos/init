@@ -10,6 +10,12 @@ function module_error_log() {
     echo -e "${RE}ERROR: The kernel module $mod couldn't load properly. Please try to run${NC} modprobe $mod ${RE}. Once loaded, the directory $mod_dir should be accessible. Otherwise the module has not been loaded as expected.${NC}"
 }
 
+#install packages for the modinstall daemonset
+if [ $MOD_INSTALL ]
+then
+    apt update && apt -y --no-install-recommends install linux-modules-extra-$(uname -r)
+fi
+
 # Configfs can be built in the kernel, hence the module 
 # initstate file will not exist. Even though, the mount
 # is present and working

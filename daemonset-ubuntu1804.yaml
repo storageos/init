@@ -1,0 +1,98 @@
+# ServiceAccount for DaemonSet.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: modinstall-daemonset-sa
+  namespace: default
+​
+# ClusterRole for init container.
+---
+a​piVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: init-container
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - delete
+​
+# Bind DaemonSet ServiceAccount with init-container ClusterRole.
+---
+​kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: init-container
+subjects:
+- kind: ServiceAccount
+  name: modinstall-daemonset-sa
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: init-container
+  apiGroup: rbac.authorization.k8s.io
+​
+# call for the custom init container to install extra kernel modules package
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: modinstall-daemonset
+  labels:
+    app: modinstall-daemonset
+spec:
+  selector:
+    matchLabels:
+      name: modinstall-daemonset
+  template:
+    metadata:
+      labels:
+        name: modinstall-daemonset
+    spec:
+      serviceAccountName: modinstall-daemonset-sa
+      initContainers:
+      - name: init-ubuntu
+        image: storageos/init:ubuntu2004
+        env:
+          - name: MOD_INSTALL
+            value: INSTALL
+        command: [ 'bash']
+        args: [ 'scripts/01-lio/enable-lio.sh' ]
+        volumeMounts:
+          - name: kernel-modules
+            mountPath: /lib/modules
+            mountPropagation: Bidirectional
+          - name: sys
+            mountPath: /sys
+            mountPropagation: Bidirectional
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+      containers:
+      - name: wait
+        image: storageos/init:ubuntu2004
+        command: [ 'sleep']
+        args: [ '5256000' ]
+      volumes:
+        - name: kernel-modules
+          hostPath:
+            path: /lib/modules
+        - name: sys
+          hostPath:
+            path: /sys
+  updateStrategy:
+    type: OnDelete

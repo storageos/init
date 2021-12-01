@@ -21,7 +21,12 @@ tidy:
 
 # Build the docker image
 docker-build:
-	docker build --no-cache . -f Dockerfile -t $(IMAGE)
+	docker build --no-cache . -f Dockerfile.ubi8 -t $(IMAGE)
+
+# Build the docker image with the extra kernel modules installation for Ubuntu
+docker-build-ubuntu:
+	docker build --no-cache . -f Dockerfile.ubuntu1804 -t storageos/modinstall:ubuntu1804
+	docker build --no-cache . -f Dockerfile.ubuntu2004 -t storageos/modinstall:ubuntu2004 
 
 # Push the docker image
 docker-push:

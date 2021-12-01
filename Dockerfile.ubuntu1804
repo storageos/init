@@ -1,0 +1,29 @@
+FROM golang:1.15.0 AS build
+
+WORKDIR /go/src/github.com/storageos/init/
+COPY . /go/src/github.com/storageos/init/
+RUN make build
+
+FROM ubuntu:18.04
+LABEL name="StorageOS Custom Init for Ubuntu Node Image" \
+    maintainer="support@storageos.com" \
+    vendor="StorageOS" \
+    version="v2.1.0-ubuntu1804" \
+    release="1" \
+    distribution-scope="public" \
+    architecture="x86_64" \
+    url="https://docs.ondat.io" \
+    io.k8s.description="The StorageOS custom Init container prepares a node for running StorageOS by installing the required extra kernel module packages." \
+    io.k8s.display-name="StorageOS Init" \
+    io.openshift.tags="storageos,storage,operator,pv,pvc,storageclass,persistent,csi" \
+    summary="Highly-available persistent block storage for containerized applications." \
+    description="StorageOS transforms commodity server or cloud based disk capacity into enterprise-class storage to run persistent workloads such as databases in containers. Provides high availability, low latency persistent block storage. No other hardware or software is required."
+
+RUN apt -y update && \
+    apt -y install kmod apt && \
+    apt -y clean 
+
+COPY scripts/ /scripts
+COPY --from=build /go/src/github.com/storageos/init/LICENSE /licenses/
+COPY --from=build /go/src/github.com/storageos/init/build/_output/bin/init /init
+CMD /init -scripts=/scripts
