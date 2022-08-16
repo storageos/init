@@ -104,6 +104,7 @@ func main() {
 
 	// add env variables as key/value pairs
 	file.WriteString(fmt.Sprintf("NODE_TOPOLOGY_ZONE=%s\n", node.Labels["topology.kubernetes.io/zone"]))
+	log.Printf("stored in env file: NODE_TOPOLOGY_ZONE=%s", node.Labels["topology.kubernetes.io/zone"])
 }
 
 // NewK8SClient attempts to get k8s cluster configuration and return a new
