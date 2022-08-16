@@ -11,6 +11,7 @@ import (
 	"github.com/storageos/init/script"
 	"github.com/storageos/init/script/runner"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 )
@@ -38,16 +39,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// This is in k8s environment.
+	kubeclient, err := newK8SClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Attempt to get storageos node image.
 
 	if *nodeImage == "" {
 		var imageInfo info.ImageInfoer
-
-		// This is in k8s environment.
-		kubeclient, err := newK8SClient()
-		if err != nil {
-			log.Fatal(err)
-		}
 
 		// Create a k8s image info.
 		name, namespace := getParamsForK8SImageInfo(*dsName, *dsNamespace)
@@ -88,6 +89,21 @@ func main() {
 	if err := runScripts(run, allScripts, scriptEnvVar); err != nil {
 		log.Fatalf("init failed: %v", err)
 	}
+
+	node, err := kubeclient.CoreV1().Nodes().Get(os.Getenv("NODE"), v1.GetOptions{})
+	if err != nil {
+		log.Fatalf("failed to get node from name \"%s\": %v", os.Getenv("NODE"), err)
+	}
+
+	file, err := os.Create("/var/lib/storageos/init_envs.sh")
+	if err != nil {
+		log.Fatalf("failed to create file init_envs.sh: %v", err)
+	}
+	defer file.Close()
+
+	// add env variables as key/value pairs
+	file.WriteString(fmt.Sprintf("NODE_TOPOLOGY_ZONE=%s\n", node.Labels["topology.kubernetes.io/zone"]))
+	log.Printf("stored in env file: NODE_TOPOLOGY_ZONE=%s", node.Labels["topology.kubernetes.io/zone"])
 }
 
 // NewK8SClient attempts to get k8s cluster configuration and return a new
