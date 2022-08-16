@@ -98,7 +98,6 @@ func main() {
 	file, err := os.Create("/var/lib/storageos/init_envs.sh")
 	if err != nil {
 		log.Fatalf("failed to create file init_envs.sh: %v", err)
-		os.Exit(1)
 	}
 	defer file.Close()
 
