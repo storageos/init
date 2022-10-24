@@ -1,6 +1,6 @@
 # Init Container for StorageOS
 
-[![Test and build image](https://github.com/storageos/init/workflows/Test%20and%20build%20image/badge.svg)](https://github.com/storageos/init/actions?query=workflow%3A%22Test+and+build+image%22) [![Build Status](https://travis-ci.com/storageos/init.svg?branch=master)](https://travis-ci.com/storageos/init) 
+[![Test and build image](https://github.com/storageos/init/workflows/Test%20and%20build%20image/badge.svg)](https://github.com/storageos/init/actions?query=workflow%3A%22Test+and+build+image%22) [![Build Status](https://travis-ci.com/storageos/init.svg?branch=master)](https://travis-ci.com/storageos/init)
 
 Init container to prepare the environment for StorageOS.
 
@@ -35,6 +35,22 @@ The version must be set in the `Dockerfile`.  To set it, run:
 
 ```console
 NEW_VERSION=<version> make release
+```
+
+## HACK: multi-arch build and release
+
+This will push `docker.io/soegarots/mpinit:latest` to Docker Hub. Change the image and tag using the Makefile variable `MPIMAGE`. If you don't have write access on Docker Hub, it will build but won't push.
+
+```sh
+$ sudo podman login --username MY-DOCKER_HUB_USERNAME
+...
+
+$ make mpbuild
+...
+
+$ make mprelease
+...
+
 ```
 
 ## Run it on host
