@@ -28,3 +28,11 @@ jobs:
         run: make docker-build
       - name: Push container image to dockerhub
         run: make docker-push
+      - name: Tag image with ECR URI
+        run: |
+          echo "NEW_IMAGE=${{ secrets.ECR_URI }}/init:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
+          make docker-tag
+      - name: Push container image to ECR
+        run: |
+          echo "IMAGE=${{ env.NEW_IMAGE }}" >> $GITHUB_ENV
+          make docker-push

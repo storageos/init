@@ -1,4 +1,6 @@
 IMAGE ?= storageos/init:test
+NEW_IMAGE ?= storageos/init:test
+
 GO_BUILD_CMD = go build -v
 GO_ENV = GOOS=linux CGO_ENABLED=0
 
@@ -26,6 +28,10 @@ docker-build:
 # Push the docker image
 docker-push:
 	docker push ${IMAGE}
+
+# Tag image
+docker-tag:
+	docker tag ${IMAGE} ${NEW_IMAGE}
 
 # Run tests
 test: generate fmt vet
