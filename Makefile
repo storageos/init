@@ -1,4 +1,5 @@
 IMAGE ?= storageos/init:test
+
 GO_BUILD_CMD = go build -v
 GO_ENV = GOOS=linux CGO_ENABLED=0
 
