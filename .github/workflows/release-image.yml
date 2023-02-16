@@ -31,8 +31,6 @@ jobs:
       - name: Tag image with ECR URI
         run: |
           echo "NEW_IMAGE=${{ secrets.ECR_URI }}/init:${{ env.IMAGE_TAG }}" >> $GITHUB_ENV
-          make docker-tag
+          docker tag ${{ env.IMAGE_TAG }} ${{ env.NEW_IMAGE }}
       - name: Push container image to ECR
-        run: |
-          echo "IMAGE=${{ env.NEW_IMAGE }}" >> $GITHUB_ENV
-          make docker-push
+        run:  docker push ${{ env.NEW_IMAGE }}

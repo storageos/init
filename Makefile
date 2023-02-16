@@ -29,10 +29,6 @@ docker-build:
 docker-push:
 	docker push ${IMAGE}
 
-# Tag image
-docker-tag:
-	docker tag ${IMAGE} ${NEW_IMAGE}
-
 # Run tests
 test: generate fmt vet
 	go test -v -race `go list -v ./...`
