@@ -2,6 +2,8 @@ IMAGE ?= storageos/init:test
 GO_BUILD_CMD = go build -v
 GO_ENV = GOOS=linux CGO_ENABLED=0
 
+MPIMAGE	?= docker.io/soegarots/mpinit:latest
+
 # Test node image name.
 NODE_IMAGE ?= storageos/node:1.4.0
 # Test scripts path.
@@ -26,6 +28,44 @@ docker-build:
 # Push the docker image
 docker-push:
 	docker push ${IMAGE}
+
+SUDO		= sudo
+BUILDAH		= $(SUDO) buildah
+PODMAN		= $(SUDO) podman
+
+BUILD_DEPS			=
+
+BUILD_ARGS_COMMON	=
+BUILD_ARGS_ARM64	= $(BUILD_ARGS_COMMON)
+BUILD_ARGS_AMD64	= $(BUILD_ARGS_COMMON)
+
+BUILDAH_MANIFEST	= mpbuild-init
+BUILDAH_URI			= docker://$(MPIMAGE)
+
+mpbuild: mpbuild-prep mpbuild-amd64 mpbuild-arm64
+
+mprelease: mpbuild-finalise
+
+mpbuild-prep:
+	$(BUILDAH) manifest rm $(BUILDAH_MANIFEST) || true
+	$(BUILDAH) manifest create $(BUILDAH_MANIFEST)
+
+mpbuild-amd64: $(BUILD_DEPS)
+	$(BUILDAH) build --tag $(MPIMAGE) $(BUILD_ARGS_AMD64) --manifest $(BUILDAH_MANIFEST) --arch amd64 .
+
+mpbuild-arm64: $(BUILD_DEPS)
+	$(BUILDAH) build --tag $(MPIMAGE) $(BUILD_ARGS_ARM64) --manifest $(BUILDAH_MANIFEST) --arch arm64 .
+
+mpbuild-finalise:
+	$(BUILDAH) manifest push --all $(BUILDAH_MANIFEST) $(BUILDAH_URI)
+
+
+cache-build-amd64: $(BUILD_DEPS)
+	$(PODMAN) build --arch amd64 $(BUILD_ARGS_AMD64) -t deleteme:latest .
+
+cache-build-arm64: $(BUILD_DEPS)
+	$(PODMAN) build --arch arm64 $(BUILD_ARGS_ARM64) -t deleteme:latest .
+
 
 # Run tests
 test: generate fmt vet
